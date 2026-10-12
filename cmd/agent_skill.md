@@ -111,7 +111,7 @@ Hooks run in the worktree via `sh -c` with the `WTX_*` variables `wtx run --help
 
 ## Project health
 
-- `wtx status` shows every worktree's branch, dirty state, and setup state, and names `wtx logs <branch>` for each failed background setup.
+- `wtx status` shows every worktree's branch, dirty state, and setup state, and names `wtx logs <branch>` for each failed background setup. A worktree whose git status fails shows `error` in its row, with a one-line reason under the table.
 - `wtx logs <name>` prints a worktree's background setup log to stdout. Foreground setup prints to the terminal and keeps no log.
 - `wtx doctor --json` reports project health and wt-to-wtx migration readiness, and changes nothing. `wtx doctor --help` covers repairs.
 - `wtx doctor --migrate-home` moves an in-repo project (`init --in-repo`, or `worktrees/` and `shared/` at the repository root) to `~/.wtx/<name>/`. Only run it when the user asks; preview with `wtx --dry-run doctor --migrate-home`.
