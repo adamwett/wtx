@@ -27,10 +27,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	projectRoot, cfg := clone.Root(), clone.Config()
 
 	runner := clone.Runner()
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		return err
 	}
+	filtered := wts.All()
 
 	if len(filtered) == 0 {
 		ui.Info("No worktrees found. Use 'wtx add' to create one.")

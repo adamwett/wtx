@@ -17,7 +17,7 @@ func newRemoveCmd() *cobra.Command {
 		Use:               "remove [name]",
 		Short:             "Remove a worktree and its branch",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: completeWorktreeNames,
+		ValidArgsFunction: completeManagedWorktreeNames,
 		RunE:              runRemove,
 	}
 	cmd.Flags().Bool("force", false, "Remove even if worktree has uncommitted changes")

@@ -13,10 +13,10 @@ func newApplyCmd() *cobra.Command {
 		Use:               "apply [name]",
 		Short:             "Apply shared files to a worktree",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: completeAllWorktreeNames,
+		ValidArgsFunction: completeWorktreeNames,
 		RunE:              runApply,
 	}
-	cmd.Flags().Bool("all", false, "Apply to all managed worktrees (not the project root)")
+	cmd.Flags().Bool("all", false, "Apply to all worktrees")
 	return cmd
 }
 
@@ -34,16 +34,17 @@ func runApply(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	candidates := wts.All()
+	if len(candidates) == 0 {
+		return fmt.Errorf("no worktrees found")
+	}
 
 	all, _ := cmd.Flags().GetBool("all")
 
 	if all {
-		if len(wts.Managed) == 0 {
-			return fmt.Errorf("no worktrees found")
-		}
 		include := includeSource(ctx, clone, wts)
 		var totalResult project.ApplyResult
-		for _, wt := range wts.Managed {
+		for _, wt := range candidates {
 			ui.Step("Applying to: " + wt.Branch)
 			vars := project.NewTemplateVars(projectRoot, wt.Path, wt.Branch)
 			result, err := project.Apply(projectRoot, wt.Path, cfg, dry, &vars, include)
@@ -55,14 +56,10 @@ func runApply(cmd *cobra.Command, args []string) error {
 			totalResult.Symlinked += result.Symlinked
 		}
 		ui.Success(fmt.Sprintf("Applied shared files to %d worktree(s) (%d included, %d copied, %d symlinked)",
-			len(wts.Managed), totalResult.Included, totalResult.Copied, totalResult.Symlinked))
+			len(candidates), totalResult.Included, totalResult.Copied, totalResult.Symlinked))
 		return nil
 	}
 
-	candidates := wts.All()
-	if len(candidates) == 0 {
-		return fmt.Errorf("no worktrees found")
-	}
 	selected, err := selectWorktree(args, candidates)
 	if err != nil {
 		if ui.IsUserAbort(err) {

@@ -129,7 +129,7 @@ func selectWorktree(args []string, filtered []git.WorktreeInfo) (git.WorktreeInf
 	case len(args) > 0 && args[0] == dotAlias:
 		wt, ok := resolveCurrentWorktree(filtered)
 		if !ok {
-			return git.WorktreeInfo{}, fmt.Errorf("not inside a managed worktree (use 'wtx list' to see available worktrees)")
+			return git.WorktreeInfo{}, fmt.Errorf("not inside a worktree (use 'wtx list' to see available worktrees)")
 		}
 		return wt, nil
 	case len(args) > 0:

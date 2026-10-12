@@ -291,11 +291,9 @@ func TestOpenDryRunStillQueries(t *testing.T) {
 	if !c.Runner().DryRun {
 		t.Error("Runner().DryRun = false, want true")
 	}
-	if managed, err := c.ManagedWorktrees(ctx); err != nil || len(managed) != 2 {
-		t.Errorf("ManagedWorktrees under dry-run = %v, %v", managed, err)
-	}
-	if wts, err := c.Worktrees(ctx); err != nil || !wts.HasMain {
-		t.Errorf("Worktrees under dry-run: HasMain=%v err=%v", wts.HasMain, err)
+	wts, err := c.Worktrees(ctx)
+	if err != nil || len(wts.Managed) != 2 || !wts.HasMain {
+		t.Errorf("Worktrees under dry-run: Managed=%v HasMain=%v err=%v", wts.Managed, wts.HasMain, err)
 	}
 }
 

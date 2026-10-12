@@ -28,10 +28,11 @@ func runLogs(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		return err
 	}
+	filtered := wts.All()
 	if len(filtered) == 0 {
 		return fmt.Errorf("no worktrees found")
 	}

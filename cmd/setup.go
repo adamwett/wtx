@@ -40,11 +40,12 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(wts.Managed) == 0 {
+	candidates := wts.All()
+	if len(candidates) == 0 {
 		return fmt.Errorf("no worktrees found")
 	}
 
-	selected, err := selectWorktree(args, wts.Managed)
+	selected, err := selectWorktree(args, candidates)
 	if err != nil {
 		if ui.IsUserAbort(err) {
 			return nil

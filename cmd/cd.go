@@ -15,7 +15,7 @@ func newCdCmd() *cobra.Command {
 		Short:             "Print worktree path for shell navigation",
 		Long:              "Prints the absolute path of a worktree. Use with: cd \"$(wtx cd)\"\n\nUse \"wtx cd .\" to print the path of the current worktree.\nUse \"wtx cd ..\" to navigate to the project root (same as \"wtx root\").",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: completeAllWorktreeNames,
+		ValidArgsFunction: completeWorktreeNames,
 		RunE:              runCd,
 	}
 }

@@ -249,13 +249,6 @@ func (c *Clone) ProjectEnv(vars TemplateVars, w Worktrees) ProjectEnv {
 	return env
 }
 
-// ManagedWorktrees lists the Clone's Managed worktrees (see
-// Worktrees.Managed). It runs under dry-run.
-func (c *Clone) ManagedWorktrees(ctx context.Context) ([]git.WorktreeInfo, error) {
-	w, err := c.Worktrees(ctx)
-	return w.Managed, err
-}
-
 // CloneDirs returns the distinct Clone dirs that WorktreesDir and SharedDir
 // live in, whether they are the per-clone default or spelled out in
 // .worktree.yml.

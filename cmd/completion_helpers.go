@@ -8,16 +8,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// completeWorktreeNames completes a worktree argument with the Managed
-// worktrees' branches.
+// completeWorktreeNames completes a worktree argument with the branches of
+// every worktree, the Project root included (see project.Worktrees.All).
 func completeWorktreeNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return completeWorktrees(cmd, args, false)
+	return completeWorktrees(cmd, args, true)
 }
 
-// completeAllWorktreeNames is completeWorktreeNames plus the Project root's
-// branch when the root is a worktree (see project.Worktrees.All).
-func completeAllWorktreeNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return completeWorktrees(cmd, args, true)
+// completeManagedWorktreeNames completes a worktree argument with the
+// Managed worktrees' branches only, for commands that must never act on the
+// Project root (such as removing a worktree).
+func completeManagedWorktreeNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completeWorktrees(cmd, args, false)
 }
 
 func completeWorktrees(cmd *cobra.Command, args []string, withRoot bool) ([]string, cobra.ShellCompDirective) {

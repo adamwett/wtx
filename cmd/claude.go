@@ -119,11 +119,12 @@ func runClaudeInit(cmd *cobra.Command, _ []string) error {
 	ui.Info("  WorktreeRemove -> " + wtBinary + " claude hook-worktree-remove")
 
 	// Apply to all existing worktrees so they get the symlink immediately.
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		ui.Warning("Could not list worktrees: " + err.Error())
 		return nil
 	}
+	filtered := wts.All()
 	// A dry run writes no settings, so Apply cannot preview the link to a
 	// settings file (or the .claude directory holding it) that shared/symlink
 	// does not hold yet.

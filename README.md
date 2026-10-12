@@ -238,6 +238,8 @@ wtx prune
 | `wtx shell-init <shell>` | Print shell startup config (wrapper + completions) |
 | `wtx completion <shell>` | Generate shell completion script |
 
+In a Checkout layout (`wtx init`) the project root is a worktree as well. Commands that take a worktree `[name]` or act on all worktrees (`list`, `status`, `sync`, `cd`, `open`, `apply`, `setup`, `logs`, `run`, `claude init`) include it under the branch checked out there. `remove` and `prune` never touch it.
+
 <a id="wt-clone"></a>
 
 ### wtx clone
@@ -471,12 +473,12 @@ Prints the absolute path to the project root (the directory containing `.worktre
 
 ```bash
 wtx apply feature/auth        # Apply shared files to one worktree
-wtx apply --all               # Apply to all managed worktrees
+wtx apply --all               # Apply to all worktrees
 ```
 
 Copies [`.worktreeinclude`](#worktreeinclude) files the worktree is missing, then copies files from `shared/copy/` (with template substitution) and creates symlinks from `shared/symlink/`. Shows each file copied and symlink created, with a summary count.
 
-In a Checkout layout, `wtx apply <branch>` with the branch checked out at the project root (`main`, `master`, ...) applies shared files to the project root. `--all` covers managed worktrees only and leaves the project root alone.
+In a Checkout layout the project root is a worktree too: `wtx apply <branch>` with the branch checked out there (`main`, `master`, ...) applies shared files to it, and `--all` includes it.
 
 <a id="wt-open"></a>
 

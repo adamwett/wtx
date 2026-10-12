@@ -115,10 +115,11 @@ type scriptContext struct {
 }
 
 // resolveScriptContext picks the working directory and environment for a
-// script run. Inside a managed worktree the script runs there with the
-// worktree's branch exported; anywhere else it runs in the current directory
-// with only the project root set. Either way it learns the Main worktree so
-// it can act on it regardless of where it was invoked.
+// script run. Inside a worktree (the Project root counts when it is one) the
+// script runs at its top with the worktree's branch exported; anywhere else
+// it runs in the current directory with only the project root set. Either
+// way it learns the Main worktree so it can act on it regardless of where it
+// was invoked.
 func resolveScriptContext(ctx context.Context, clone *project.Clone) (scriptContext, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -132,7 +133,7 @@ func resolveScriptContext(ctx context.Context, clone *project.Clone) (scriptCont
 
 	projectRoot := clone.Root()
 	dir, vars := cwd, project.TemplateVars{ProjectRoot: filepath.Clean(projectRoot)}
-	if wt, ok := resolveCurrentWorktree(wts.Managed); ok {
+	if wt, ok := resolveCurrentWorktree(wts.All()); ok {
 		dir, vars = wt.Path, project.NewTemplateVars(projectRoot, wt.Path, wt.Branch)
 	}
 	return scriptContext{dir: dir, env: clone.ProjectEnv(vars, wts)}, nil
