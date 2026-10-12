@@ -218,7 +218,7 @@ wtx prune
 | `wtx clone <url> [name]` | Clone a repo as a bare worktree project |
 | `wtx init` | Initialize wtx in an existing git checkout, or set up a clone of one |
 | `wtx add [branch]` | Create a new worktree for a branch |
-| `wtx list` | List all worktrees |
+| `wtx list` | List all worktrees, including the project root in a checkout |
 | `wtx remove [name]` | Remove a worktree and its branch |
 | `wtx setup [name]` | Run setup hooks on an existing worktree |
 | `wtx run [name] [args...]` | Run a named project script from any worktree |
@@ -454,6 +454,8 @@ wtx cd                        # Interactive picker
 
 Prints the absolute path to stdout. When run without a shell wrapper, `wtx cd` prints a hint about setting one up. See [Shell Integration](#shell-integration) for details.
 
+In a project set up with `wtx init` on an existing checkout, the main worktree is the project root rather than a directory under `worktrees/`. `wtx cd`, its picker and its shell completion offer it under the branch checked out there, so `wtx cd main` prints the project root. `wtx list` shows it as the first row, marked `(project root)`. A project root with a detached HEAD is listed but not offered; use `wtx root` to reach it.
+
 <a id="wt-root"></a>
 
 ### wtx root
@@ -476,6 +478,8 @@ wtx apply --all               # Apply to all worktrees
 
 Copies [`.worktreeinclude`](#worktreeinclude) files the worktree is missing, then copies files from `shared/copy/` (with template substitution) and creates symlinks from `shared/symlink/`. Shows each file copied and symlink created, with a summary count.
 
+`wtx apply` only targets worktrees wtx manages. In a checkout, the project root is the `.worktreeinclude` source, so `wtx apply main` refuses it.
+
 <a id="wt-open"></a>
 
 ### wtx open
@@ -484,6 +488,8 @@ Copies [`.worktreeinclude`](#worktreeinclude) files the worktree is missing, the
 wtx open feature/auth         # Open in editor
 wtx open                      # Interactive picker
 ```
+
+Like `wtx cd`, `wtx open` also offers the project root when it is the main worktree.
 
 Editor resolution order: `editor` field in `.worktree.yml` > `$EDITOR` env var > auto-detect (Cursor, VS Code, Zed).
 

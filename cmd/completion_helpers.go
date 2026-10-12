@@ -8,12 +8,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// completeWorktreeNames completes the branches of the Managed worktrees, for
+// commands that change a worktree.
 func completeWorktreeNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completeNames(cmd, args, false)
+}
+
+// completeNavigableNames also completes the Main worktree's branch, for
+// commands that only go to a worktree (see project.Worktrees.Navigable).
+func completeNavigableNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completeNames(cmd, args, true)
+}
+
+func completeNames(cmd *cobra.Command, args []string, withMain bool) ([]string, cobra.ShellCompDirective) {
 	if len(args) != 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	names, err := listWorktreeNames(cmd.Context())
+	names, err := listWorktreeNames(cmd.Context(), withMain)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
@@ -21,15 +33,21 @@ func completeWorktreeNames(cmd *cobra.Command, args []string, toComplete string)
 	return names, cobra.ShellCompDirectiveNoFileComp
 }
 
-func listWorktreeNames(ctx context.Context) ([]string, error) {
+// listWorktreeNames lists "." and the Managed worktrees' branches, and with
+// withMain the Main worktree's too.
+func listWorktreeNames(ctx context.Context, withMain bool) ([]string, error) {
 	clone, err := completionClone(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		return nil, err
+	}
+	filtered := wts.Managed
+	if withMain {
+		filtered = wts.Navigable()
 	}
 
 	names := make([]string, 0, len(filtered)+1)

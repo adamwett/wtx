@@ -190,6 +190,26 @@ type Worktrees struct {
 	HasMain bool
 }
 
+// Navigable is every worktree a user can move to by branch: the Main
+// worktree first, then the Managed worktrees. Main is left out when it has
+// no branch (a detached Project root) or is already Managed (a Bare
+// layout), so no branch appears twice.
+func (w Worktrees) Navigable() []git.WorktreeInfo {
+	if !w.HasMain || w.Main.Branch == "" || w.mainIsManaged() {
+		return w.Managed
+	}
+	return append([]git.WorktreeInfo{w.Main}, w.Managed...)
+}
+
+// mainIsManaged reports whether the Main worktree is one of the Managed
+// worktrees, as in a Bare layout.
+func (w Worktrees) mainIsManaged() bool {
+	mainPath := ui.CanonicalPath(w.Main.Path)
+	return slices.ContainsFunc(w.Managed, func(wt git.WorktreeInfo) bool {
+		return ui.CanonicalPath(wt.Path) == mainPath
+	})
+}
+
 // ClassifyWorktrees splits all, a `git worktree list` of the Clone at root,
 // into its Managed worktrees and its Main worktree. mainBranch picks the
 // Main worktree in a Bare layout (config.Config.MainBranchOrDefault).

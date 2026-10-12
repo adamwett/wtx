@@ -34,6 +34,9 @@ func runApply(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := rootApplyError(clone.Layout(), wts, args); err != nil {
+		return err
+	}
 
 	if len(wts.Managed) == 0 {
 		return fmt.Errorf("no worktrees found")
@@ -77,4 +80,17 @@ func runApply(cmd *cobra.Command, args []string) error {
 	ui.Success(fmt.Sprintf("Applied shared files to: %s (%d included, %d copied, %d symlinked)",
 		selected.Branch, result.Included, result.Copied, result.Symlinked))
 	return nil
+}
+
+// rootApplyError explains why apply refuses the Project root when args names
+// the branch it has checked out in a Checkout or In-repo layout: the root is
+// the .worktreeinclude source, not a Managed worktree.
+func rootApplyError(layout project.LayoutKind, wts project.Worktrees, args []string) error {
+	if layout == project.BareLayout || !wts.HasMain || len(args) == 0 || wts.Main.Branch == "" || args[0] != wts.Main.Branch {
+		return nil
+	}
+	if _, ok := findWorktreeByBranch(wts.Managed, args[0]); ok {
+		return nil
+	}
+	return fmt.Errorf("%s is checked out at the project root, the .worktreeinclude source; wtx apply only targets managed worktrees", args[0])
 }

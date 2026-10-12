@@ -47,11 +47,6 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	for _, wt := range filtered {
 		relPath := paths.Path(wt.Path)
 
-		shortHead := wt.Head
-		if len(shortHead) > 7 {
-			shortHead = shortHead[:7]
-		}
-
 		// An unreadable worktree gets an error row and a hint rather than
 		// hiding the rest of the table.
 		styledStatus := ui.StyleSuccess.Render("clean")
@@ -79,7 +74,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 			hints = append(hints, setupFailureHint(wt.Branch, wt.Path, state))
 		}
 
-		t.Row(wt.Branch, relPath, shortHead, styledStatus, styledSetup, age)
+		t.Row(wt.Branch, relPath, shortHead(wt.Head), styledStatus, styledSetup, age)
 	}
 	ui.PrintTable(t)
 	for _, hint := range hints {

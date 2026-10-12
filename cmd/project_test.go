@@ -122,6 +122,41 @@ func TestResolveCurrentWorktree(t *testing.T) {
 	})
 }
 
+// In an In-repo layout the Project root (the Main worktree) contains every
+// Managed worktree, so the deepest match must win.
+func TestResolveCurrentWorktreeNested(t *testing.T) {
+	root := t.TempDir()
+	wt := filepath.Join(root, ".worktrees", "worktrees", "feat")
+	subdir := filepath.Join(wt, "src")
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	navigable := []git.WorktreeInfo{
+		{Path: root, Branch: "main"},
+		{Path: wt, Branch: "feat"},
+	}
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	for _, tt := range []struct{ dir, want string }{
+		{root, "main"},
+		{wt, "feat"},
+		{subdir, "feat"},
+	} {
+		if err := os.Chdir(tt.dir); err != nil {
+			t.Fatal(err)
+		}
+		got, ok := resolveCurrentWorktree(navigable)
+		if !ok || got.Branch != tt.want {
+			t.Errorf("in %s: got %q (found %v), want %q", tt.dir, got.Branch, ok, tt.want)
+		}
+	}
+}
+
 func TestFindWorktreeByBranch(t *testing.T) {
 	filtered := []git.WorktreeInfo{
 		{Path: "/proj/worktrees/feat-a", Branch: "feat-a"},
