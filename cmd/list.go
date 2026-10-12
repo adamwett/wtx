@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/bkildow/wtx/internal/project"
 	"github.com/bkildow/wtx/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -21,12 +22,15 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 	projectRoot := clone.Root()
 
-	filtered, err := clone.ManagedWorktrees(cmd.Context())
+	wts, err := clone.Worktrees(cmd.Context())
 	if err != nil {
 		return err
 	}
+	// In a Checkout or In-repo layout the Main worktree is the Project root,
+	// not a Managed worktree, so it gets its own row.
+	rootRow := clone.Layout() != project.BareLayout && wts.HasMain
 
-	if len(filtered) == 0 {
+	if len(wts.Managed) == 0 && !rootRow {
 		ui.Info("No worktrees found. Use 'wtx add' to create one.")
 		return nil
 	}
@@ -34,15 +38,25 @@ func runList(cmd *cobra.Command, args []string) error {
 	ui.Heading("Worktrees")
 
 	t := ui.NewTable().Headers("BRANCH", "PATH", "COMMIT")
-	paths := ui.NewPathDisplay(projectRoot)
-	for _, wt := range filtered {
-		relPath := paths.Path(wt.Path)
-		shortHead := wt.Head
-		if len(shortHead) > 7 {
-			shortHead = shortHead[:7]
+	if rootRow {
+		branch := wts.Main.Branch
+		if branch == "" {
+			branch = "(detached)"
 		}
-		t.Row(wt.Branch, relPath, shortHead)
+		t.Row(branch, ui.DisplayPath("", projectRoot)+" (project root)", shortHead(wts.Main.Head))
+	}
+	paths := ui.NewPathDisplay(projectRoot)
+	for _, wt := range wts.Managed {
+		t.Row(wt.Branch, paths.Path(wt.Path), shortHead(wt.Head))
 	}
 	ui.PrintTable(t)
 	return nil
+}
+
+// shortHead abbreviates a commit hash to 7 characters.
+func shortHead(head string) string {
+	if len(head) > 7 {
+		return head[:7]
+	}
+	return head
 }

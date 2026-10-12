@@ -57,7 +57,7 @@ Run git commands inside a worktree. In a Bare layout the project root has no `.g
 
 ## Paths and navigation
 
-`wtx cd <name>` prints a path and changes nothing. Move with `cd "$(wtx cd <name>)"`. `wtx cd .` prints the current worktree and `wtx root` prints the project root.
+`wtx cd <name>` prints a path and changes nothing. Move with `cd "$(wtx cd <name>)"`. `wtx cd .` prints the current worktree and `wtx root` prints the project root. In a project set up with `wtx init` on a checkout, the main worktree is the project root: `wtx cd main` and `wtx open main` resolve to it, and `wtx list` marks its row `(project root)`. It is not a managed worktree, so `wtx apply`, `wtx remove` and `wtx setup` reject it.
 
 ## Creating a worktree
 

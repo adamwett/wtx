@@ -75,3 +75,59 @@ func TestClassifyWorktrees(t *testing.T) {
 		})
 	}
 }
+
+func TestWorktreesNavigable(t *testing.T) {
+	root := filepath.FromSlash("/proj")
+	bare := git.WorktreeInfo{Path: filepath.Join(root, ".bare"), Bare: true}
+	rootMain := git.WorktreeInfo{Path: root, Branch: "main", Head: "abc"}
+	rootHotfix := git.WorktreeInfo{Path: root, Branch: "hotfix", Head: "abc"}
+	rootDetached := git.WorktreeInfo{Path: root, Head: "abc"}
+	mainWT := git.WorktreeInfo{Path: filepath.Join(root, "worktrees", "main"), Branch: "main"}
+	feature := git.WorktreeInfo{Path: filepath.FromSlash("/elsewhere/feature"), Branch: "feature"}
+
+	tests := []struct {
+		name   string
+		all    []git.WorktreeInfo
+		layout LayoutKind
+		want   []git.WorktreeInfo
+	}{
+		{
+			name:   "checkout: the Project root comes first",
+			all:    []git.WorktreeInfo{rootMain, feature},
+			layout: CheckoutLayout,
+			want:   []git.WorktreeInfo{rootMain, feature},
+		},
+		{
+			name:   "checkout: the root goes by the branch it has checked out",
+			all:    []git.WorktreeInfo{rootHotfix, feature},
+			layout: CheckoutLayout,
+			want:   []git.WorktreeInfo{rootHotfix, feature},
+		},
+		{
+			name:   "checkout: a detached root is left out",
+			all:    []git.WorktreeInfo{rootDetached, feature},
+			layout: CheckoutLayout,
+			want:   []git.WorktreeInfo{feature},
+		},
+		{
+			name:   "checkout: the root with no Managed worktrees",
+			all:    []git.WorktreeInfo{rootMain},
+			layout: CheckoutLayout,
+			want:   []git.WorktreeInfo{rootMain},
+		},
+		{
+			name:   "bare: Main is already Managed and appears once",
+			all:    []git.WorktreeInfo{bare, mainWT, feature},
+			layout: BareLayout,
+			want:   []git.WorktreeInfo{mainWT, feature},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ClassifyWorktrees(tt.all, root, tt.layout, "main").Navigable()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Navigable =\n %+v\nwant\n %+v", got, tt.want)
+			}
+		})
+	}
+}

@@ -20,7 +20,7 @@ func newOpenCmd() *cobra.Command {
 		Use:               "open [name]",
 		Short:             "Open a worktree in an IDE",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: completeWorktreeNames,
+		ValidArgsFunction: completeNavigableNames,
 		RunE:              runOpen,
 	}
 	return cmd
@@ -35,10 +35,11 @@ func runOpen(cmd *cobra.Command, args []string) error {
 	}
 	cfg := clone.Config()
 
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		return err
 	}
+	filtered := wts.Navigable()
 
 	if len(filtered) == 0 {
 		return fmt.Errorf("no worktrees found")
