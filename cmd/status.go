@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cmp"
 	"strings"
 
 	"github.com/bkildow/wtx/internal/project"
@@ -51,19 +52,24 @@ func runStatus(cmd *cobra.Command, args []string) error {
 			shortHead = shortHead[:7]
 		}
 
-		dirty, err := runner.IsWorktreeDirty(ctx, wt.Path)
-		if err != nil {
-			return err
-		}
-
-		age, err := runner.GetLastCommitAge(ctx, wt.Path)
-		if err != nil {
-			return err
-		}
-
+		// An unreadable worktree gets an error row and a hint rather than
+		// hiding the rest of the table.
 		styledStatus := ui.StyleSuccess.Render("clean")
-		if dirty {
+		dirty, dirtyErr := runner.IsWorktreeDirty(ctx, wt.Path)
+		switch {
+		case dirtyErr != nil:
+			styledStatus = ui.StyleError.Render("error")
+		case dirty:
 			styledStatus = ui.StyleWarning.Render("dirty")
+		}
+
+		age, ageErr := runner.GetLastCommitAge(ctx, wt.Path)
+		if ageErr != nil {
+			age = ui.StyleError.Render("error")
+		}
+
+		if gitErr := cmp.Or(dirtyErr, ageErr); gitErr != nil {
+			hints = append(hints, gitErrorHint(wt.Branch, gitErr))
 		}
 
 		// An unreadable state renders as "-", like a missing one.
@@ -94,6 +100,20 @@ func setupFailureHint(branch, worktreePath string, state *project.SetupState) st
 		return hint + " — run 'wtx logs " + branch + "'"
 	}
 	return hint + " — re-run with 'wtx setup " + branch + " --foreground'"
+}
+
+// gitErrorHint explains an error row in one line. Runner errors put the
+// command first and git's stderr after it, so a "fatal:" line is preferred.
+func gitErrorHint(branch string, err error) string {
+	msg := err.Error()
+	reason, _, _ := strings.Cut(msg, "\n")
+	for line := range strings.Lines(msg) {
+		if line = strings.TrimSpace(line); strings.HasPrefix(line, "fatal:") {
+			reason = line
+			break
+		}
+	}
+	return "Could not read status for " + branch + ": " + reason
 }
 
 func renderSetupStatus(state *project.SetupState) string {
