@@ -63,13 +63,14 @@ Run git commands inside a worktree. In a Bare layout the project root has no `.g
 
 `wtx add <branch>` checks out the remote branch if one exists and otherwise creates a new branch from `main_branch` (override with `--base-branch <ref>`). It then applies shared files and runs setup hooks.
 
-When `background_setup: true`, `wtx add` returns before setup finishes. Pass `--foreground` whenever you will build or test in the new worktree right away. The worktree is ready when `wtx cd <branch>` resolves and the SETUP column of `wtx status` reads Complete (or `-` when no hooks are configured). Failed means read the setup output before working there. `wtx setup <name> --foreground` re-runs setup.
+When `background_setup: true`, `wtx add` returns before setup finishes. Pass `--foreground` whenever you will build or test in the new worktree right away. The worktree is ready when `wtx cd <branch>` resolves and the SETUP column of `wtx status` reads Complete (or `-` when no hooks are configured). Failed means run `wtx logs <branch>` to read the setup output before working there. `wtx setup <name> --foreground` re-runs setup.
 
 ## Removing worktrees
 
 - `wtx remove <name> --force` runs teardown hooks, then removes the worktree and its branch. A branch git calls unmerged is kept, and the output prints the exact `git --git-dir <dir> branch -D <name>` command to delete it. Run it only if the user wants those commits gone.
 - `wtx prune --yes` removes every worktree whose branch is merged, including squash, rebase and merged-PR merges. Merged worktrees with uncommitted changes are kept unless you add `--force`. Git calls squash- and rebase-merged branches unmerged, so prune keeps those branches and prints the `branch -D` command for each. Their work is already in the default branch, so deleting them is safe.
 - `--skip-teardown` skips teardown hooks on either command.
+- A worktree under `~/.herdr/worktrees/` belongs to a herdr workspace. Ask the user to remove it with herdr's `wtx.remove` action rather than `wtx remove`, which would leave the herdr workspace open on a deleted directory.
 
 ## Project scripts
 
@@ -106,9 +107,12 @@ Files ending in `.template` are copied with the suffix stripped and these variab
 
 `wtx config init --update` rewrites the file with documentation comments and keeps existing values.
 
+Hooks run in the worktree via `sh -c` with the `WTX_*` variables `wtx run --help` lists, except `WTX_SCRIPT_NAME`. When writing a hook that acts on per-worktree resources, name them from `$WTX_WORKTREE_ID` (e.g. `docker compose -p "$WTX_WORKTREE_ID" down -v`) instead of relying on the working directory.
+
 ## Project health
 
-- `wtx status` shows every worktree's branch, dirty state, and setup state.
+- `wtx status` shows every worktree's branch, dirty state, and setup state, and names `wtx logs <branch>` for each failed background setup.
+- `wtx logs <name>` prints a worktree's background setup log to stdout. Foreground setup prints to the terminal and keeps no log.
 - `wtx doctor --json` reports project health and wt-to-wtx migration readiness, and changes nothing. `wtx doctor --help` covers repairs.
 - `wtx doctor --migrate-home` moves an in-repo project (`init --in-repo`, or `worktrees/` and `shared/` at the repository root) to `~/.wtx/<name>/`. Only run it when the user asks; preview with `wtx --dry-run doctor --migrate-home`.
 - `wtx repair` restores the per-worktree git config after a git or wtx upgrade. It is safe to re-run.

@@ -15,20 +15,23 @@
 
 ---
 
-> ### Migrating from `wt` to `wtx` (v0.11.0)
+> ### Migrating from `wt` to `wtx` (v0.12.0)
 >
-> v0.11.0 is available through Homebrew and `go install` using the commands below.
+> v0.12.0 is the last release before v1.0.0 removes the `wt` shim, the `wt`
+> cask, and the legacy `WT_*` script variables. Migrate now:
 >
-> In v0.11.0, `wtx` is the primary command and a deprecated `wt` shim ships
-> alongside it. Existing `wt` commands keep working and print a migration warning.
-> Update your [shell startup line](#shell-integration) to use `wtx shell-init`.
-> Scripts receive both `WTX_*` and legacy `WT_*` variables; settings read `WTX_*`
-> first and fall back to `WT_*` when the new variable is unset.
+> - `wtx` is the command. The deprecated `wt` shim still works but prints a
+>   deprecation banner on every run (`WTX_NO_DEPRECATION_WARN=1` silences it).
+> - Update your [shell startup line](#shell-integration) to use `wtx shell-init`.
+> - Settings are read only from `WTX_THEME` and `WTX_NO_DISK_WARN`; `WT_THEME`
+>   and `WT_NO_DISK_WARN` are ignored.
+> - Scripts receive both `WTX_*` and legacy `WT_*` variables until v1.0.0.
+>   Switch script references to `WTX_*`.
+> - Run `wtx doctor --user` and `wtx doctor` to find remaining `wt` and `WT_*`
+>   references.
 >
-> In v0.12.0, the shim warning becomes stronger and legacy `WT_*` settings stop
-> being read (exports remain). In v1.0.0, the `wt` shim, cask, and `WT_*` exports
-> are removed. `.worktree.yml` and `${PROJECT_ROOT}`, `${WORKTREE_ID}`,
-> `${WORKTREE_PATH}`, and `${BRANCH_NAME}` template variables stay unchanged.
+> `.worktree.yml` and `${PROJECT_ROOT}`, `${WORKTREE_ID}`, `${WORKTREE_PATH}`,
+> and `${BRANCH_NAME}` template variables stay unchanged.
 
 ## Features
 
@@ -41,6 +44,7 @@
 - **Interactive by default** — branch/worktree pickers when arguments are omitted
 - **Setup/teardown hooks** — run commands automatically when creating or removing worktrees
 - **Claude Code integration** — automatic worktree creation/removal via Claude Code hooks
+- **herdr integration** — worktrees created in [herdr](https://herdr.dev) get shared files and setup hooks, and a herdr action removes them with teardown
 - **Agent skill** — teaches any skills-aware coding agent to drive `wtx` non-interactively ([install](#agent-skill))
 - **Editor integration** — open worktrees in your preferred editor ($EDITOR, config, or auto-detect)
 - **Shell completions** — tab-complete worktree names in bash, zsh, and fish
@@ -122,9 +126,9 @@ Matches include paths, line numbers, and identifiers, never full source lines.
 The user scan honors `ZDOTDIR` and `XDG_CONFIG_HOME`, checks standard Bash, Zsh, and
 Fish startup files, and never sources them or follows arbitrary shell includes.
 
-Replace legacy input settings `WT_THEME` and `WT_NO_DISK_WARN` with their `WTX_`
-names **before v0.12**. Replace `wt` command calls, shell startup invocations,
-and legacy `WT_*` script-variable references **before v1.0**. Installation alone
+Legacy input settings `WT_THEME` and `WT_NO_DISK_WARN` are no longer read;
+replace them with their `WTX_` names. Replace `wt` command calls, shell startup
+invocations, and legacy `WT_*` script-variable references **before v1.0**. Installation alone
 does not migrate binaries, shell initialization, or projects.
 
 Exit code is 0 when no failures remain, or 1 for failures, inspection errors, or
@@ -223,11 +227,13 @@ wtx prune
 | `wtx apply [name]` | Apply shared files to a worktree |
 | `wtx open [name]` | Open a worktree in an IDE |
 | `wtx status` | Show status of all worktrees |
+| `wtx logs [name]` | Print a worktree's background setup log |
 | `wtx doctor` | Check project health and migration readiness |
 | `wtx sync` | Fetch and pull all worktrees |
 | `wtx prune` | Remove worktrees with fully merged branches |
 | `wtx config init` | Generate annotated `.worktree.yml` with documentation |
 | `wtx claude init` | Configure Claude Code hooks for automatic worktree management |
+| `wtx herdr init` | Install the wtx plugin into herdr |
 | `wtx skill` | Print the agent skill for AI coding agents |
 | `wtx shell-init <shell>` | Print shell startup config (wrapper + completions) |
 | `wtx completion <shell>` | Generate shell completion script |
@@ -381,7 +387,8 @@ Re-runs the `setup:` and `parallel_setup:` hooks from `.worktree.yml` against an
 existing worktree. The primary use case is bootstrapping a worktree that was
 created with `wtx add --skip-setup`, but it can also be used to re-run hooks
 after editing `.worktree.yml`. Refuses to run when a setup is already in
-progress for the target worktree (check with `wtx status`).
+progress for the target worktree (check with `wtx status`, or read its output so far
+with `wtx logs`).
 
 <a id="wt-run"></a>
 
@@ -420,7 +427,7 @@ variables are exported:
 | `WTX_BRANCH_NAME` | Branch of the current worktree (empty outside a worktree) |
 
 Each variable is also exported under its legacy `WT_*` name with the same value
-through the transition. Prefer `WTX_*` in new scripts.
+until v1.0.0 removes them. Use `WTX_*` in scripts.
 
 A non-zero exit from the script is reported as an error.
 
@@ -488,9 +495,23 @@ Editor resolution order: `editor` field in `.worktree.yml` > `$EDITOR` env var >
 wtx status
 ```
 
-Shows branch, path, commit hash, dirty/clean status, and last commit age for all worktrees.
+Shows branch, path, commit hash, dirty/clean status, setup state, and last commit age for all worktrees.
+
+When a worktree's setup failed, a line after the table names the error and points at `wtx logs <branch>`, or at `wtx setup <branch> --foreground` when the failed run was in the foreground and left no log.
 
 Also warns when the project's filesystem is running low on space — see [Low Disk Space Warnings](#low-disk-space-warnings).
+
+### wtx logs
+
+```bash
+wtx logs feature/auth         # Print the setup log for a worktree
+wtx logs .                    # Target the worktree containing $PWD
+wtx logs                      # Interactive picker
+```
+
+Prints the log of a worktree's background setup to stdout, including the output of
+any failing hook. Foreground setup prints to the terminal and keeps no log, so for
+those worktrees `wtx logs` says there is no log and exits successfully.
 
 <a id="wt-sync"></a>
 
@@ -541,6 +562,34 @@ This enables two hooks:
 - **WorktreeRemove** — when the subagent finishes, `wtx` runs teardown hooks and cleans up the worktree and branch
 
 Run `wtx claude init` once per project. The hooks propagate to all worktrees automatically.
+
+### wtx herdr init
+
+```bash
+wtx herdr init                        # Write the plugin manifest and link it with herdr
+wtx herdr init --binary /path/to/wtx  # Use a specific wtx binary path
+wtx herdr init --no-link              # Write the manifest only
+```
+
+Installs a [herdr](https://herdr.dev) plugin, written to `~/.wtx/herdr-plugin/`, so worktrees created and removed from herdr behave like ones from `wtx add` and `wtx remove`. The plugin is global to herdr: run it once per machine. It ignores repositories without a `.worktree.yml` and replaces the plugin installed by the deprecated `wt herdr init`.
+
+herdr keeps ownership of its checkouts, which live in its own directory (`~/.herdr/worktrees/<repo>/<branch>` by default):
+
+- **Creating** a worktree in herdr fires `worktree.created`. `wtx` applies shared files and `.worktreeinclude`, and runs setup hooks in the background; `wtx status` and `wtx logs` cover the checkout like any other.
+- **Removing** through the plugin's `wtx.remove` action runs teardown hooks inside the checkout, then has herdr delete the checkout and close its workspace. It asks before removing a worktree with uncommitted changes. Like herdr, it keeps the branch; `wtx prune` deletes merged ones.
+- **Removing** through herdr's own *Delete worktree checkout* deletes the checkout before `wtx` hears about it, so teardown hooks cannot run. `wtx` stops any setup still running, lists the skipped hooks in `herdr plugin log list --plugin wtx`, and shows a herdr notification.
+
+Bind the action in `~/.config/herdr/config.toml` and use it instead of herdr's delete for `wtx` projects:
+
+```toml
+[[keys.command]]
+key = "prefix+shift+x"
+type = "plugin_action"
+command = "wtx.remove"
+description = "remove worktree (wtx teardown)"
+```
+
+herdr only creates worktrees from a workspace on a repository's main working tree. In a bare `wtx clone` project, where every checkout is a linked worktree, open that workspace at the project's `.bare` directory.
 
 <a id="wt-completion"></a>
 
@@ -687,8 +736,9 @@ secrets/
 | `WTX_NO_DISK_WARN` | Any non-empty value disables [low disk space warnings](#low-disk-space-warnings) |
 | `WTX_THEME` | Color theme for terminal output |
 
-Scripts run by `wtx run` also receive the [`WTX_*` variables](#wt-run) listed
-under `wtx run`.
+Scripts run by `wtx run` also receive the [`WTX_*` variables](#wtx-run) listed
+under `wtx run`, and hooks receive them as described under
+[Setup & Teardown Hooks](#setup--teardown-hooks).
 
 ### Setup & Teardown Hooks
 
@@ -697,6 +747,14 @@ Hooks run in the worktree directory via `sh -c`. Serial hooks (`setup`/`teardown
 - **Setup hooks** run after worktree creation and shared file application. If any hook fails, `wtx add` reports the error (the worktree is still created).
 - **Teardown hooks** run before worktree removal. Hook failures are logged as warnings and do not prevent removal.
 - Both respect `--dry-run` (prints what would run without executing).
+
+Every hook gets the [`WTX_*` variables](#wtx-run) that `wtx run` exports, except
+`WTX_SCRIPT_NAME`, describing the worktree being set up or torn down:
+`WTX_PROJECT_ROOT`, `WTX_SHARED_PATH`, `WTX_MAIN_BRANCH`,
+`WTX_MAIN_WORKTREE_PATH`, `WTX_WORKTREE_PATH`, `WTX_WORKTREE_ID` and
+`WTX_BRANCH_NAME`. Hooks have no legacy `WT_*` names. Naming resources after
+the worktree rather than relying on the working directory keeps a hook
+unambiguous, for example `docker compose -p "$WTX_WORKTREE_ID" down -v`.
 
 ### Parallel Hooks
 
@@ -719,8 +777,7 @@ Running many worktrees at once (each with its own containers, `node_modules`, DB
 
 The check warns when free space is below **either** bound (`disk_warn_percent` or `disk_warn_gb`); set a bound to `-1` to disable it individually. The last line only appears when no `teardown`/`parallel_teardown` hooks are configured, since without them `wtx prune` cannot reclaim resources living outside the worktree directory.
 
-Disable the warning permanently with `disk_warn: false` in `.worktree.yml`, or per-invocation with `WTX_NO_DISK_WARN=1`. The legacy `WT_NO_DISK_WARN`
-setting is used only when `WTX_NO_DISK_WARN` is unset.
+Disable the warning permanently with `disk_warn: false` in `.worktree.yml`, or per-invocation with `WTX_NO_DISK_WARN=1`.
 
 ### Template Variables
 

@@ -232,7 +232,7 @@ func runClaudeHookWorktreeCreate(cmd *cobra.Command, _ []string) error {
 	// runSetupBackground prints the worktree path to stdout on its own.
 	hasHooks := len(cfg.Setup) > 0 || len(cfg.ParallelSetup) > 0
 	if hasHooks {
-		if err := runSetupBackground(projectRoot, worktreePath, cfg, false, msg); err != nil {
+		if err := runSetupBackground(projectRoot, worktreePath, branch, cfg, false, msg); err != nil {
 			// Setup hook failure is non-fatal — the worktree is still usable.
 			ui.Warning("Background setup failed to start: " + err.Error())
 			fmt.Println(worktreePath)
@@ -272,12 +272,9 @@ func runClaudeHookWorktreeRemove(cmd *cobra.Command, _ []string) error {
 	terminateBackgroundSetup(worktreePath, branch, false)
 
 	// Run teardown hooks.
-	if err := project.RunTeardownHooks(ctx, cfg, worktreePath, false); err != nil {
-		ui.Warning("Teardown hooks failed: " + err.Error())
-	}
-	if err := project.RunParallelTeardownHooks(ctx, cfg, worktreePath, false); err != nil {
-		ui.Warning("Parallel teardown hooks failed: " + err.Error())
-	}
+	all := project.ClassifyWorktrees(worktrees, clone.Root(), clone.Layout(), cfg.MainBranchOrDefault())
+	env := clone.ProjectEnv(project.NewTemplateVars(clone.Root(), worktreePath, branch), all)
+	runTeardownHooks(ctx, cfg, env, false)
 
 	// Force remove — Claude agents may have uncommitted changes.
 	ui.Step("Removing worktree: " + branch)

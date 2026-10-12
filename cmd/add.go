@@ -129,7 +129,11 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	vars := project.NewTemplateVars(projectRoot, worktreePath, branch)
-	include := resolveIncludeSource(ctx, clone)
+	wts, err := clone.Worktrees(ctx)
+	if err != nil {
+		ui.Warning("Could not list worktrees: " + err.Error())
+	}
+	include := includeSource(ctx, clone, wts)
 	result, err := project.Apply(projectRoot, worktreePath, cfg, dry, &vars, include)
 	if err != nil {
 		return err
@@ -169,10 +173,10 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	if background {
-		return runSetupBackground(projectRoot, worktreePath, cfg, dry, msg)
+		return runSetupBackground(projectRoot, worktreePath, branch, cfg, dry, msg)
 	}
 
-	return runSetupForeground(cmd, worktreePath, cfg, dry, msg)
+	return runSetupForeground(cmd, cfg, clone.ProjectEnv(vars, wts), dry, msg)
 }
 
 // newBranchStartPoint picks the ref a new branch is created from. An explicit
@@ -219,13 +223,14 @@ func resolveBackgroundMode(cmd *cobra.Command, cfg *config.Config) (bool, error)
 	return cfg.BackgroundSetup, nil
 }
 
-func runSetupForeground(cmd *cobra.Command, worktreePath string, cfg *config.Config, dry bool, msg string) error {
+func runSetupForeground(cmd *cobra.Command, cfg *config.Config, env project.ProjectEnv, dry bool, msg string) error {
 	ctx := cmd.Context()
+	worktreePath := env.Vars.WorktreePath
 	startedAt := time.Now()
 
 	var setupErr error
-	setupErr = project.RunSetupHooks(ctx, cfg, worktreePath, dry, nil)
-	if pErr := project.RunParallelSetupHooks(ctx, cfg, worktreePath, dry); pErr != nil {
+	setupErr = project.RunSetupHooks(ctx, cfg, env, dry, nil)
+	if pErr := project.RunParallelSetupHooks(ctx, cfg, env, dry); pErr != nil {
 		setupErr = errors.Join(setupErr, pErr)
 	}
 
@@ -256,7 +261,7 @@ func runSetupForeground(cmd *cobra.Command, worktreePath string, cfg *config.Con
 	return nil
 }
 
-func runSetupBackground(projectRoot, worktreePath string, cfg *config.Config, dry bool, msg string) error {
+func runSetupBackground(projectRoot, worktreePath, branch string, cfg *config.Config, dry bool, msg string) error {
 	hooksTotal := len(cfg.Setup) + len(cfg.ParallelSetup)
 
 	if dry {
@@ -275,6 +280,7 @@ func runSetupBackground(projectRoot, worktreePath string, cfg *config.Config, dr
 		exe, "_run-setup",
 		"--worktree-path", worktreePath,
 		"--project-root", projectRoot,
+		"--branch", branch,
 	)
 	detachProcess(child)
 
@@ -307,7 +313,7 @@ func runSetupBackground(projectRoot, worktreePath string, cfg *config.Config, dr
 	}
 
 	ui.Success(msg)
-	ui.Step("Setup is running in the background. Run 'wtx status' to check progress.")
+	ui.Step("Setup is running in the background. Run 'wtx logs " + branch + "' to see its output or 'wtx status' to check progress.")
 	fmt.Println(worktreePath)
 	return nil
 }

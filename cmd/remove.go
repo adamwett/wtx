@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/bkildow/wtx/internal/config"
 	"github.com/bkildow/wtx/internal/project"
 	"github.com/bkildow/wtx/internal/ui"
 	"github.com/spf13/cobra"
@@ -34,10 +36,11 @@ func runRemove(cmd *cobra.Command, args []string) error {
 
 	runner := clone.Runner()
 
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		return err
 	}
+	filtered := wts.Managed
 	mainBranch := cfg.MainBranchOrDefault()
 
 	if len(filtered) == 0 {
@@ -80,12 +83,8 @@ func runRemove(cmd *cobra.Command, args []string) error {
 
 	skipTeardown, _ := cmd.Flags().GetBool("skip-teardown")
 	if !skipTeardown {
-		if err := project.RunTeardownHooks(ctx, cfg, selected.Path, IsDryRun()); err != nil {
-			ui.Warning("Teardown hooks failed: " + err.Error())
-		}
-		if err := project.RunParallelTeardownHooks(ctx, cfg, selected.Path, IsDryRun()); err != nil {
-			ui.Warning("Parallel teardown hooks failed: " + err.Error())
-		}
+		env := clone.ProjectEnv(project.NewTemplateVars(projectRoot, selected.Path, selected.Branch), wts)
+		runTeardownHooks(ctx, cfg, env, IsDryRun())
 	}
 
 	isMainBranch := selected.Branch == mainBranch
@@ -115,6 +114,17 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// runTeardownHooks runs the serial then the parallel teardown hooks for the
+// worktree env describes. Failures are warnings: removal goes ahead.
+func runTeardownHooks(ctx context.Context, cfg *config.Config, env project.ProjectEnv, dryRun bool) {
+	if err := project.RunTeardownHooks(ctx, cfg, env, dryRun); err != nil {
+		ui.Warning("Teardown hooks failed for " + env.Vars.BranchName + ": " + err.Error())
+	}
+	if err := project.RunParallelTeardownHooks(ctx, cfg, env, dryRun); err != nil {
+		ui.Warning("Parallel teardown hooks failed for " + env.Vars.BranchName + ": " + err.Error())
+	}
+}
+
 // terminateBackgroundSetup kills an in-progress background setup process.
 // Under dry-run it reports the process it would signal and leaves it running.
 func terminateBackgroundSetup(worktreePath, branch string, dryRun bool) {
@@ -132,21 +142,26 @@ func terminateBackgroundSetup(worktreePath, branch string, dryRun bool) {
 	}
 
 	ui.Warning(fmt.Sprintf("Terminating in-progress setup for %s (PID %d)", branch, state.PID))
-	_ = terminateProcess(state.PID)
+	stopProcess(state.PID)
+}
 
-	// Poll for exit, then force-kill if the process doesn't terminate.
+// stopProcess asks pid to terminate, then force-kills it if it is still
+// running after two seconds.
+func stopProcess(pid int) {
+	_ = terminateProcess(pid)
+
 	deadline := time.After(2 * time.Second)
 	tick := time.NewTicker(100 * time.Millisecond)
 	defer tick.Stop()
 	for {
 		select {
 		case <-tick.C:
-			if !project.IsProcessAlive(state.PID) {
+			if !project.IsProcessAlive(pid) {
 				return
 			}
 		case <-deadline:
-			if project.IsProcessAlive(state.PID) {
-				_ = killProcess(state.PID)
+			if project.IsProcessAlive(pid) {
+				_ = killProcess(pid)
 			}
 			return
 		}
