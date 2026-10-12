@@ -81,22 +81,27 @@ func branchFromWorktreePath(worktrees []git.WorktreeInfo, worktreesDir, worktree
 	return filepath.ToSlash(rel), nil
 }
 
-// resolveCurrentWorktree finds the managed worktree that contains the current
-// working directory. Returns the matching WorktreeInfo and true, or a zero
-// value and false if the cwd is not inside any managed worktree.
+// resolveCurrentWorktree finds the worktree that contains the current
+// working directory. When worktrees nest (an In-repo layout's worktrees sit
+// inside the Project root), the innermost one wins. Returns the matching
+// WorktreeInfo and true, or a zero value and false if the cwd is not inside
+// any of them.
 func resolveCurrentWorktree(filtered []git.WorktreeInfo) (git.WorktreeInfo, bool) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return git.WorktreeInfo{}, false
 	}
 	currentPath := ui.CanonicalPath(cwd)
+	var best git.WorktreeInfo
+	bestLen := -1
 	for _, wt := range filtered {
+		wtPath := ui.CanonicalPath(wt.Path)
 		// The worktree root itself (".") counts as inside it.
-		if ui.Within(ui.CanonicalPath(wt.Path), currentPath) {
-			return wt, true
+		if len(wtPath) > bestLen && ui.Within(wtPath, currentPath) {
+			best, bestLen = wt, len(wtPath)
 		}
 	}
-	return git.WorktreeInfo{}, false
+	return best, bestLen >= 0
 }
 
 // isInsideWorktree reports whether the current working directory is inside

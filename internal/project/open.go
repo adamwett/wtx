@@ -187,6 +187,19 @@ type Worktrees struct {
 	// worktree checked out on the main branch.
 	Main    git.WorktreeInfo
 	HasMain bool
+	// rootListed is true when Main is the Project root and git lists it as
+	// a worktree, so All includes it.
+	rootListed bool
+}
+
+// All is every worktree a user can pick by branch: the Project root first
+// when it is a worktree (Checkout and In-repo layouts), then the Managed
+// worktrees. In a Bare layout it is Managed.
+func (w Worktrees) All() []git.WorktreeInfo {
+	if !w.rootListed {
+		return w.Managed
+	}
+	return append([]git.WorktreeInfo{w.Main}, w.Managed...)
 }
 
 // ClassifyWorktrees splits all, a `git worktree list` of the Clone at root,
@@ -204,7 +217,7 @@ func ClassifyWorktrees(all []git.WorktreeInfo, root string, layout LayoutKind, m
 		case wt.Path == root || ui.CanonicalPath(wt.Path) == canonicalRoot:
 			if layout != BareLayout {
 				wt.Path = root
-				w.Main = wt
+				w.Main, w.rootListed = wt, true
 			}
 		default:
 			w.Managed = append(w.Managed, wt)

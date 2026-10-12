@@ -8,12 +8,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// completeWorktreeNames completes a worktree argument with the Managed
+// worktrees' branches.
 func completeWorktreeNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completeWorktrees(cmd, args, false)
+}
+
+// completeAllWorktreeNames is completeWorktreeNames plus the Project root's
+// branch when the root is a worktree (see project.Worktrees.All).
+func completeAllWorktreeNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return completeWorktrees(cmd, args, true)
+}
+
+func completeWorktrees(cmd *cobra.Command, args []string, withRoot bool) ([]string, cobra.ShellCompDirective) {
 	if len(args) != 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	names, err := listWorktreeNames(cmd.Context())
+	names, err := listWorktreeNames(cmd.Context(), withRoot)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
@@ -21,15 +33,19 @@ func completeWorktreeNames(cmd *cobra.Command, args []string, toComplete string)
 	return names, cobra.ShellCompDirectiveNoFileComp
 }
 
-func listWorktreeNames(ctx context.Context) ([]string, error) {
+func listWorktreeNames(ctx context.Context, withRoot bool) ([]string, error) {
 	clone, err := completionClone(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	filtered, err := clone.ManagedWorktrees(ctx)
+	wts, err := clone.Worktrees(ctx)
 	if err != nil {
 		return nil, err
+	}
+	filtered := wts.Managed
+	if withRoot {
+		filtered = wts.All()
 	}
 
 	names := make([]string, 0, len(filtered)+1)

@@ -452,7 +452,7 @@ cd "$(wtx cd feature/auth)"   # Navigate to worktree
 wtx cd                        # Interactive picker
 ```
 
-Prints the absolute path to stdout. When run without a shell wrapper, `wtx cd` prints a hint about setting one up. See [Shell Integration](#shell-integration) for details.
+Prints the absolute path to stdout. In a Checkout layout the project root is the main worktree, so `wtx cd <branch>` with the branch checked out at the project root (`main`, `master`, ...) prints the project root. When run without a shell wrapper, `wtx cd` prints a hint about setting one up. See [Shell Integration](#shell-integration) for details.
 
 <a id="wt-root"></a>
 
@@ -471,10 +471,12 @@ Prints the absolute path to the project root (the directory containing `.worktre
 
 ```bash
 wtx apply feature/auth        # Apply shared files to one worktree
-wtx apply --all               # Apply to all worktrees
+wtx apply --all               # Apply to all managed worktrees
 ```
 
 Copies [`.worktreeinclude`](#worktreeinclude) files the worktree is missing, then copies files from `shared/copy/` (with template substitution) and creates symlinks from `shared/symlink/`. Shows each file copied and symlink created, with a summary count.
+
+In a Checkout layout, `wtx apply <branch>` with the branch checked out at the project root (`main`, `master`, ...) applies shared files to the project root. `--all` covers managed worktrees only and leaves the project root alone.
 
 <a id="wt-open"></a>
 

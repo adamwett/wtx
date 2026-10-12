@@ -13,10 +13,10 @@ func newApplyCmd() *cobra.Command {
 		Use:               "apply [name]",
 		Short:             "Apply shared files to a worktree",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: completeWorktreeNames,
+		ValidArgsFunction: completeAllWorktreeNames,
 		RunE:              runApply,
 	}
-	cmd.Flags().Bool("all", false, "Apply to all worktrees")
+	cmd.Flags().Bool("all", false, "Apply to all managed worktrees (not the project root)")
 	return cmd
 }
 
@@ -35,13 +35,12 @@ func runApply(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if len(wts.Managed) == 0 {
-		return fmt.Errorf("no worktrees found")
-	}
-
 	all, _ := cmd.Flags().GetBool("all")
 
 	if all {
+		if len(wts.Managed) == 0 {
+			return fmt.Errorf("no worktrees found")
+		}
 		include := includeSource(ctx, clone, wts)
 		var totalResult project.ApplyResult
 		for _, wt := range wts.Managed {
@@ -60,7 +59,11 @@ func runApply(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	selected, err := selectWorktree(args, wts.Managed)
+	candidates := wts.All()
+	if len(candidates) == 0 {
+		return fmt.Errorf("no worktrees found")
+	}
+	selected, err := selectWorktree(args, candidates)
 	if err != nil {
 		if ui.IsUserAbort(err) {
 			return nil

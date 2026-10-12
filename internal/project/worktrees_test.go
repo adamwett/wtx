@@ -22,6 +22,7 @@ func TestClassifyWorktrees(t *testing.T) {
 		layout     LayoutKind
 		mainBranch string
 		want       Worktrees
+		wantAll    []git.WorktreeInfo
 	}{
 		{
 			name:       "bare: Main is the Managed worktree on the main branch",
@@ -29,6 +30,7 @@ func TestClassifyWorktrees(t *testing.T) {
 			layout:     BareLayout,
 			mainBranch: "main",
 			want:       Worktrees{Managed: []git.WorktreeInfo{mainWT, feature}, Main: mainWT, HasMain: true},
+			wantAll:    []git.WorktreeInfo{mainWT, feature},
 		},
 		{
 			name:       "bare: main_branch picks the Main worktree",
@@ -36,6 +38,7 @@ func TestClassifyWorktrees(t *testing.T) {
 			layout:     BareLayout,
 			mainBranch: "develop",
 			want:       Worktrees{Managed: []git.WorktreeInfo{mainWT, develop}, Main: develop, HasMain: true},
+			wantAll:    []git.WorktreeInfo{mainWT, develop},
 		},
 		{
 			name:       "bare: no worktree on the main branch",
@@ -43,20 +46,23 @@ func TestClassifyWorktrees(t *testing.T) {
 			layout:     BareLayout,
 			mainBranch: "main",
 			want:       Worktrees{Managed: []git.WorktreeInfo{feature}},
+			wantAll:    []git.WorktreeInfo{feature},
 		},
 		{
 			name:       "checkout: Main is the Project root with its Branch",
 			all:        []git.WorktreeInfo{rootWT, feature},
 			layout:     CheckoutLayout,
 			mainBranch: "main",
-			want:       Worktrees{Managed: []git.WorktreeInfo{feature}, Main: rootWT, HasMain: true},
+			want:       Worktrees{Managed: []git.WorktreeInfo{feature}, Main: rootWT, HasMain: true, rootListed: true},
+			wantAll:    []git.WorktreeInfo{rootWT, feature},
 		},
 		{
 			name:       "in-repo: a linked worktree on the main branch stays Managed",
 			all:        []git.WorktreeInfo{rootWT, mainWT},
 			layout:     InRepoLayout,
 			mainBranch: "main",
-			want:       Worktrees{Managed: []git.WorktreeInfo{mainWT}, Main: rootWT, HasMain: true},
+			want:       Worktrees{Managed: []git.WorktreeInfo{mainWT}, Main: rootWT, HasMain: true, rootListed: true},
+			wantAll:    []git.WorktreeInfo{rootWT, mainWT},
 		},
 		{
 			name:       "checkout: Project root missing from the listing is still Main",
@@ -64,6 +70,7 @@ func TestClassifyWorktrees(t *testing.T) {
 			layout:     CheckoutLayout,
 			mainBranch: "main",
 			want:       Worktrees{Managed: []git.WorktreeInfo{feature}, Main: git.WorktreeInfo{Path: root}, HasMain: true},
+			wantAll:    []git.WorktreeInfo{feature},
 		},
 	}
 	for _, tt := range tests {
@@ -71,6 +78,9 @@ func TestClassifyWorktrees(t *testing.T) {
 			got := ClassifyWorktrees(tt.all, root, tt.layout, tt.mainBranch)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ClassifyWorktrees =\n %+v\nwant\n %+v", got, tt.want)
+			}
+			if all := got.All(); !reflect.DeepEqual(all, tt.wantAll) {
+				t.Errorf("All =\n %+v\nwant\n %+v", all, tt.wantAll)
 			}
 		})
 	}

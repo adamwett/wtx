@@ -220,6 +220,30 @@ func TestSelectWorktree(t *testing.T) {
 			t.Fatal("expected error when not inside a worktree")
 		}
 	})
+
+	t.Run("dot alias prefers the innermost worktree", func(t *testing.T) {
+		origDir, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		// An In-repo layout lists the Project root, which contains the
+		// linked worktrees, before them.
+		withRoot := append([]git.WorktreeInfo{{Path: tmp, Branch: "main"}}, filtered...)
+		for dir, want := range map[string]string{wtA: "feat-a", tmp: "main"} {
+			if err := os.Chdir(dir); err != nil {
+				t.Fatal(err)
+			}
+			wt, err := selectWorktree([]string{"."}, withRoot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if wt.Branch != want {
+				t.Errorf("in %s: got branch %q, want %q", dir, wt.Branch, want)
+			}
+		}
+	})
 }
 
 func TestIsInsideWorktree(t *testing.T) {
