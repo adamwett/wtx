@@ -53,6 +53,17 @@ go vet ./...                              # Lint
 3. Open the Clone with `openClone(ctx)` (from the current directory; prints a friendly error outside a project), `project.OpenAt(ctx, root, project.Options{...})` for a Project root the caller already knows (it skips root detection), or `project.Open(ctx, dir, project.Options{...})` to find the root from another directory or for silent shell completion. Use its accessors (`Root()`, `Config()`, `Runner()`, `WorktreesDir()`, `SharedDir()`, `ManagedWorktrees(ctx)`, `Worktrees(ctx)`) instead of raw `config.Load()`, `git.NewRunner()` or path helpers; the Clone resolves the per-clone `~/.wtx/<name>` paths and threads `--dry-run` into its Runner (queries such as `WorktreeList` still run under dry-run)
 4. Document agent-relevant usage in `cmd/agent_skill.md` (the agent skill printed by `wtx skill`; it must not be named `SKILL.md` in any case, or `npx skills add` installs it instead of the wrapper). Keep its frontmatter identical to the installable wrapper in `skills/wtx/SKILL.md`; `cmd/skill_test.go` enforces this.
 
+### Finishing work
+
+When a change is complete and `make dev` passes, ship it as a PR without waiting to be asked:
+
+1. Commit on the current feature branch. Never commit to `main`; if you are on it, branch first.
+2. Push with `git push -u origin HEAD`.
+3. Invoke the `mattpocock-skills:pr` skill to write the body, then open the PR with `gh pr create`. If the branch already has a PR, push and update its body instead (`gh pr edit`).
+4. Give the user the PR URL. Leave merging to them.
+
+Bead IDs are local-only, so keep them out of commit messages and PR bodies (see `docs/agents/issue-tracker.md`).
+
 ---
 
 ## Agent skills
