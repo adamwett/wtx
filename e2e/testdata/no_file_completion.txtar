@@ -1,4 +1,9 @@
-# Arguments and flag values that take free text suggest no files
+# Commands that take no arguments, and arguments and flag values that take
+# free text, suggest no files
+
+# A command that takes no arguments
+exec wtx __complete status ''
+cmp stdout none.golden
 
 # clone: a URL, then the name of the directory it creates
 exec wtx __complete clone ''

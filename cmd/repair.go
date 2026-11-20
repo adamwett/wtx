@@ -18,8 +18,9 @@ func newRepairCmd() *cobra.Command {
 			"Use this on existing projects after upgrading wtx or git: git 2.52+ refuses " +
 			"auto-discovery from a worktree attached to a bare common dir unless each " +
 			"worktree explicitly overrides core.bare.",
-		Args: cobra.NoArgs,
-		RunE: runRepair,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runRepair,
 	}
 }
 

@@ -130,8 +130,9 @@ when you remove the worktree through the plugin's action. Bind it in
   type = "plugin_action"
   command = "wtx.remove"
   description = "remove worktree (wtx teardown)"`,
-		Args: cobra.NoArgs,
-		RunE: runHerdrInit,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runHerdrInit,
 	}
 	cmd.Flags().String("binary", "", "Path to the wtx binary herdr should run (default: this executable)")
 	cmd.Flags().Bool("no-link", false, "Write the manifest but do not run 'herdr plugin link'")

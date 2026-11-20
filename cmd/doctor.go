@@ -23,7 +23,8 @@ func newDoctorCmd() *cobra.Command {
 		Use: "doctor", Short: "Check project health and migration readiness",
 		Long: "Inspect project health without changing files. --fix repairs managed metadata with backups. Shared files, worktrees, scripts, and user dotfiles receive manual remedies. References to the legacy wt command and WT_* variables are reported: there is no wt command, and wtx neither reads nor exports WT_* variables. Output groups related findings; --verbose lists every finding, including passing checks.\n\n" +
 			"--migrate-home moves an in-repo clone (wtx init --in-repo, or an older project with worktrees/ and shared/ at the repository root) to its clone directory ~/.wtx/<name>/: worktrees (git worktree move), shared/ and bin/, an owner marker and git config wtx.name; it removes worktree_dir, shared_dir and the bin/ scripts entries from .worktree.yml (backed up first) so the paths resolve per clone. Locked worktrees, worktrees with submodules, Git-tracked shared files and a bin/ outside worktree_dir stay put and are reported. Preview with --dry-run; rerunning resumes an interrupted migration.",
-		Args: cobra.NoArgs,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Flags().Changed("name") && !migrateHome {
 				return errors.New("--name requires --migrate-home")

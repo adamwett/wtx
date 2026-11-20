@@ -35,8 +35,9 @@ another, e.g. when another repository already uses ~/.wtx/<name>/.
 
 --in-repo instead keeps everything in a .worktrees/ directory inside the
 repository and records those paths in .worktree.yml.`,
-		Args: cobra.NoArgs,
-		RunE: runInit,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runInit,
 	}
 	cmd.Flags().String("name", "", "Directory name under ~/.wtx (default: wtx.name, else the repository directory name)")
 	cmd.Flags().Bool("in-repo", false, "Keep worktrees and shared files in .worktrees/ inside the repository")

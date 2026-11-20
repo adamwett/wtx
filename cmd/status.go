@@ -13,10 +13,11 @@ import (
 
 func newStatusCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "status",
-		Short: "Show status of all worktrees",
-		Args:  cobra.NoArgs,
-		RunE:  runStatus,
+		Use:               "status",
+		Short:             "Show status of all worktrees",
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runStatus,
 	}
 	cmd.Flags().Bool("json", false, "Write worktree status as JSON to stdout")
 	return cmd

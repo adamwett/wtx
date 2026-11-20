@@ -52,11 +52,12 @@ func newClaudeCmd() *cobra.Command {
 
 func newClaudeInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Configure Claude Code hooks for this project",
-		Long:  "Writes WorktreeCreate and WorktreeRemove hooks to .claude/settings.local.json so that Claude Code agents create worktrees through wtx.",
-		Args:  cobra.NoArgs,
-		RunE:  runClaudeInit,
+		Use:               "init",
+		Short:             "Configure Claude Code hooks for this project",
+		Long:              "Writes WorktreeCreate and WorktreeRemove hooks to .claude/settings.local.json so that Claude Code agents create worktrees through wtx.",
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runClaudeInit,
 	}
 	cmd.Flags().String("binary", "wtx", "Path or name of the wtx binary to use in hook commands")
 	return cmd

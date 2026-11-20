@@ -10,10 +10,11 @@ import (
 
 func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all worktrees",
-		Args:  cobra.NoArgs,
-		RunE:  runList,
+		Use:               "list",
+		Short:             "List all worktrees",
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runList,
 	}
 	cmd.Flags().Bool("json", false, "Write worktrees as JSON to stdout")
 	return cmd

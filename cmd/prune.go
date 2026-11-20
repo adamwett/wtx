@@ -23,8 +23,9 @@ Detects regular, squash, and rebase merges, plus merged pull requests when
 gh is available. Merged worktrees with uncommitted changes are listed as
 dirty and kept unless --force is given. A confirmation prompt is shown
 before anything is removed; pass --yes to skip it.`,
-		Args: cobra.NoArgs,
-		RunE: runPrune,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runPrune,
 	}
 	cmd.Flags().Bool("force", false, "Remove merged worktrees even if they have uncommitted changes")
 	cmd.Flags().Bool("yes", false, "Skip confirmation prompt")

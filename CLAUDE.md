@@ -81,6 +81,7 @@ A failing check names what to use instead. When the user corrects a mistake, fix
 | One `git worktree list` per command | `cmd/worktree_list_count_test.go` |
 | Tests never see the real HOME, `~/.wtx`, git config or an enclosing wtx/git environment | `internal/testenv.Main` in every package's `TestMain` (`testenv.Isolate` in e2e), required by `internal/testenv/coverage_test.go`; `Main` also fails a run that writes under the shared home |
 | The agent skill is never named `SKILL.md`; its frontmatter matches `skills/wtx/SKILL.md` | `cmd/skill_test.go` |
+| A visible command's arguments and non-bool flags complete something other than files (`cobra.NoFileCompletions` for none or free text), unless they take a file path | `cmd/completion_test.go`; file-path ones are listed in its `completesFiles` |
 | A command that loops over worktrees, branches or batches reports a failed item and carries on (an error row or warning), so one bad worktree never aborts the rest | Judgment, nothing enforces it |
 | `/simplify` and `/code-review --fix` run before every commit and stay inside the plan | Judgment, nothing enforces it |
 | Reuse the existing helper (`ui.ShellQuote`, `project.SamePath`, `runTeardownHooks`, `newBranchStartPoint`...) instead of writing a second one | Judgment; `/simplify` looks for it |

@@ -8,11 +8,12 @@ import (
 
 func newRootCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "root",
-		Short: "Print project root path for shell navigation",
-		Long:  "Prints the absolute path to the wtx project root (the directory containing .worktree.yml).",
-		Args:  cobra.NoArgs,
-		RunE:  runRoot,
+		Use:               "root",
+		Short:             "Print project root path for shell navigation",
+		Long:              "Prints the absolute path to the wtx project root (the directory containing .worktree.yml).",
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runRoot,
 	}
 }
 

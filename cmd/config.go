@@ -28,8 +28,9 @@ func newConfigInitCmd() *cobra.Command {
 By default the existing file is backed up to .worktree.yml.bak and every
 setting except git_dir, worktree_dir, shared_dir and main_branch is reset to
 the template, so the project keeps its layout. With --update every existing value is kept.`,
-		Args: cobra.NoArgs,
-		RunE: runConfigInit,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runConfigInit,
 	}
 	cmd.Flags().Bool("update", false, "Merge existing values into the annotated template")
 	return cmd

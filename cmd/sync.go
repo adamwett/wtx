@@ -9,10 +9,11 @@ import (
 
 func newSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "sync",
-		Short: "Fetch and pull all worktrees",
-		Args:  cobra.NoArgs,
-		RunE:  runSync,
+		Use:               "sync",
+		Short:             "Fetch and pull all worktrees",
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runSync,
 	}
 	cmd.Flags().Bool("rebase", false, "Use rebase instead of merge when pulling")
 	return cmd
