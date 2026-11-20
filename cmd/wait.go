@@ -44,12 +44,13 @@ Exit status (the worst across worktrees; a failure beats still running):
   %d   still running when --timeout ran out (run wtx wait again)
   %d  interrupted
   1    wtx failed`, exitSetupFailed, exitStillRunning, exitInterrupted),
-		ValidArgsFunction: completeWorktreeNames,
+		ValidArgsFunction: completeWorktreeNameList,
 		RunE:              runWait,
 	}
 	cmd.Flags().Bool("all", false, "Wait for every managed worktree")
 	cmd.Flags().Duration("timeout", 10*time.Minute, "How long to wait; 0 checks once without waiting")
 	cmd.Flags().Bool("json", false, "Write the final setup state as JSON to stdout")
+	_ = cmd.RegisterFlagCompletionFunc("timeout", cobra.NoFileCompletions)
 	return cmd
 }
 

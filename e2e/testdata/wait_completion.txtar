@@ -1,0 +1,19 @@
+[!exec:git] skip 'git not available'
+
+setup-repo develop
+setup-project
+
+cd $WORK/project
+exec wtx add --skip-setup develop
+exec wtx add --skip-setup feature/x
+
+# wait takes several worktrees, so every argument completes the ones not
+# named yet
+exec wtx __complete wait ''
+stdout '^develop$'
+stdout '^feature/x$'
+stdout '^:4$'
+exec wtx __complete wait develop ''
+! stdout '^develop$'
+stdout '^feature/x$'
+stdout '^:4$'

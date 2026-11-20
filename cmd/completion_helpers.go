@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"slices"
 
 	"github.com/bkildow/wtx/internal/project"
 	"github.com/spf13/cobra"
@@ -18,6 +19,16 @@ func completeWorktreeNames(cmd *cobra.Command, args []string, toComplete string)
 // commands that only go to a worktree (see project.Worktrees.Navigable).
 func completeNavigableNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return completeNames(cmd, args, true)
+}
+
+// completeWorktreeNameList completes every argument with the Managed
+// worktrees' branches not named yet, for commands that take several.
+func completeWorktreeNameList(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	names, err := listWorktreeNames(cmd.Context(), false)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	return slices.DeleteFunc(names, func(name string) bool { return slices.Contains(args, name) }), cobra.ShellCompDirectiveNoFileComp
 }
 
 func completeNames(cmd *cobra.Command, args []string, withMain bool) ([]string, cobra.ShellCompDirective) {
