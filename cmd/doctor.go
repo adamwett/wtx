@@ -49,5 +49,6 @@ func newDoctorCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&migrateHome, "migrate-home", false, "Move an in-repo clone's worktrees, shared files and scripts to ~/.wtx/<name>/")
 	cmd.Flags().StringVar(&name, "name", "", "Directory name under ~/.wtx for --migrate-home (default: wtx.name, else the repository directory name)")
 	cmd.MarkFlagsMutuallyExclusive("fix", "migrate-home")
+	_ = cmd.RegisterFlagCompletionFunc("name", cobra.NoFileCompletions)
 	return cmd
 }

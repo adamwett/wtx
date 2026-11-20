@@ -10,5 +10,9 @@ cmp stdout none.golden
 exec wtx __complete init --name ''
 cmp stdout none.golden
 
+# doctor --name: a directory name under ~/.wtx
+exec wtx __complete doctor --migrate-home --name ''
+cmp stdout none.golden
+
 -- none.golden --
 :4
