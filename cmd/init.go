@@ -40,6 +40,7 @@ repository and records those paths in .worktree.yml.`,
 	}
 	cmd.Flags().String("name", "", "Directory name under ~/.wtx (default: wtx.name, else the repository directory name)")
 	cmd.Flags().Bool("in-repo", false, "Keep worktrees and shared files in .worktrees/ inside the repository")
+	_ = cmd.RegisterFlagCompletionFunc("name", cobra.NoFileCompletions)
 	return cmd
 }
 
