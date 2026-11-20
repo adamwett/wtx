@@ -1,0 +1,42 @@
+[!exec:git] skip 'git not available'
+
+setup-repo
+setup-project
+
+cd $WORK/project
+
+cp $WORK/file shared/copy/config.json
+cp $WORK/file shared/copy/.env.template
+mkdir shared/copy/vendor/pkg
+cp $WORK/file shared/copy/vendor/pkg/lib.txt
+
+# --overwrite completes the shared/copy entries, a template by the path it
+# renders to, and leaves no space after a directory
+exec wtx __complete apply --overwrite ''
+cmp stdout $WORK/top.golden
+
+# Completing inside a directory lists its entries
+exec wtx __complete apply --overwrite vendor/
+cmp stdout $WORK/vendor.golden
+exec wtx __complete apply --overwrite vendor/pkg/
+cmp stdout $WORK/pkg.golden
+
+# Nothing outside shared/copy
+exec wtx __complete apply --overwrite ../
+cmp stdout $WORK/none.golden
+
+-- file --
+content
+-- top.golden --
+.env
+config.json
+vendor/
+:6
+-- vendor.golden --
+vendor/pkg/
+:6
+-- pkg.golden --
+vendor/pkg/lib.txt
+:4
+-- none.golden --
+:4

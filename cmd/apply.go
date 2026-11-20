@@ -3,7 +3,10 @@ package cmd
 import (
 	"cmp"
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/bkildow/wtx/internal/project"
 	"github.com/bkildow/wtx/internal/ui"
@@ -29,6 +32,7 @@ shared/copy file.`,
 	cmd.Flags().Bool("force", false, "Replace every shared/copy file the worktree already has")
 	cmd.Flags().StringArray("overwrite", nil, "Replace this shared/copy path (file or directory, relative to the worktree root) if the worktree has it; repeatable")
 	cmd.MarkFlagsMutuallyExclusive("force", "overwrite")
+	_ = cmd.RegisterFlagCompletionFunc("overwrite", completeOverwritePaths)
 	return cmd
 }
 
@@ -132,6 +136,41 @@ func applyCopyMode(cmd *cobra.Command, copyDir string) (project.CopyMode, error)
 		return project.CopyMode{}, fmt.Errorf("--overwrite %w", err)
 	}
 	return project.CopyMode{Seed: true, Replace: replace}, nil
+}
+
+// completeOverwritePaths completes --overwrite with the shared/copy entries,
+// one directory level at a time, naming each .template file by the path it
+// renders to.
+func completeOverwritePaths(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	clone, err := completionClone(cmd.Context())
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	dir, _ := path.Split(toComplete)
+	if dir != "" && !filepath.IsLocal(dir) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	entries, err := os.ReadDir(filepath.Join(clone.SharedDir(), "copy", filepath.FromSlash(dir)))
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	directive := cobra.ShellCompDirectiveNoFileComp
+	paths := make([]string, 0, len(entries))
+	for _, e := range entries {
+		name := dir + e.Name()
+		if e.IsDir() {
+			// Leave the cursor after the slash so the next TAB goes inside.
+			name += "/"
+			directive |= cobra.ShellCompDirectiveNoSpace
+		} else {
+			name = project.StripTemplateExt(name)
+		}
+		if !slices.Contains(paths, name) {
+			paths = append(paths, name)
+		}
+	}
+	return paths, directive
 }
 
 // reportApply prints the summary line, and how to replace the files apply
