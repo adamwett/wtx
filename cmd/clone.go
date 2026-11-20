@@ -15,10 +15,11 @@ import (
 
 func newCloneCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "clone <url> [<name>]",
-		Short: "Clone a repo into a bare worktree project",
-		Args:  cobra.RangeArgs(1, 2),
-		RunE:  runClone,
+		Use:               "clone <url> [<name>]",
+		Short:             "Clone a repo into a bare worktree project",
+		Args:              cobra.RangeArgs(1, 2),
+		ValidArgsFunction: cobra.NoFileCompletions,
+		RunE:              runClone,
 	}
 }
 

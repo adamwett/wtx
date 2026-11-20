@@ -1,0 +1,10 @@
+# Arguments and flag values that take free text suggest no files
+
+# clone: a URL, then the name of the directory it creates
+exec wtx __complete clone ''
+cmp stdout none.golden
+exec wtx __complete clone https://example.com/repo.git ''
+cmp stdout none.golden
+
+-- none.golden --
+:4
